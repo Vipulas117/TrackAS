@@ -1,0 +1,1 @@
+export default function ChatWidget(){ return (<div style={{position:'fixed',right:20,bottom:20}}><div style={{width:60,height:60,borderRadius:30,background:'#6A0DAD',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>AI</div></div>); }

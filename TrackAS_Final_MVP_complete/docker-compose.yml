@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: trackas
+      POSTGRES_PASSWORD: trackas
+      POSTGRES_DB: trackas
+    ports: ["5432:5432"]
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  backend:
+    build: ./backend
+    ports: ["4000:4000"]
+    depends_on: ["db"]
+  frontend:
+    build: ./frontend
+    ports: ["3000:3000"]
+    depends_on: ["backend"]
+volumes:
+  db_data:

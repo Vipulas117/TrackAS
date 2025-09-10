@@ -1,0 +1,1 @@
+import '../styles.css'; import ChatWidget from './components/ChatWidget'; export default function MyApp({ Component, pageProps }) { return (<><Component {...pageProps} /><ChatWidget /></>); }

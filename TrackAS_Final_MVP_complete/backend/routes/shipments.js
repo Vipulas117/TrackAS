@@ -1,0 +1,20 @@
+import express from 'express';
+import { query } from '../db.js';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
+router.post('/', async (req,res)=>{
+  const { company_id, pickup, destination, length, width, height, weight, instructions, customer_name, customer_phone, customer_email, cost } = req.body;
+  const id = uuidv4();
+  const commission_pct = parseFloat(process.env.DEFAULT_COMMISSION || '5');
+  const commission_amount = Math.round(cost * commission_pct / 100);
+  await query('INSERT INTO shipments(id,company_id,pickup,destination,length,width,height,weight,instructions,customer_name,customer_phone,customer_email,cost,commission_amount,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)', [id,company_id,pickup,destination,length,width,height,weight,instructions,customer_name,customer_phone,customer_email,cost,commission_amount,'CREATED']);
+  res.json({ ok:true, shipment_id:id, commission:commission_amount });
+});
+router.post('/:id/accept', async (req,res)=>{ const { driver_id } = req.body; await query('UPDATE shipments SET operator_id=$1, status=$2 WHERE id=$3',[driver_id,'ASSIGNED',req.params.id]); res.json({ ok:true }); });
+router.post('/:id/ping', async (req,res)=>{ const { lat,lng } = req.body; await query('INSERT INTO pings(shipment_id,lat,lng) VALUES($1,$2,$3)',[req.params.id,lat,lng]); res.json({ ok:true }); });
+router.post('/:id/pod', upload.single('pod'), async (req,res)=>{ const file=req.file; await query('INSERT INTO proof_of_delivery(shipment_id,path) VALUES($1,$2)',[req.params.id,file.path]); await query("UPDATE shipments SET status='DELIVERED' WHERE id=$1",[req.params.id]); res.json({ ok:true }); });
+router.get('/company/:companyId/enriched', async (req,res)=>{ const companyId=req.params.companyId; const shipmentsQ=`SELECT s.*, op.id as operator_id, op.name as operator_name, op.mobile as operator_mobile, (SELECT reg_no FROM vehicles v WHERE v.company_id = s.company_id LIMIT 1) as vehicle_reg_no, lp.lat as last_lat, lp.lng as last_lng, lp.ts as last_ping_at FROM shipments s LEFT JOIN operators op ON s.operator_id = op.id LEFT JOIN LATERAL ( SELECT lat,lng,ts FROM pings p WHERE p.shipment_id = s.id ORDER BY ts DESC LIMIT 1 ) lp ON true WHERE s.company_id=$1 ORDER BY s.created_at DESC`; const { rows } = await query(shipmentsQ,[companyId]); res.json(rows); });
+router.get('/:id/stream', async (req,res)=>{ const id=req.params.id; res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'}); const interval=setInterval(()=>res.write(': ping\n\n'),25000); let lastTs=null; const timer=setInterval(async ()=>{ try{ const r=await query('SELECT lat,lng,ts FROM pings WHERE shipment_id=$1 ORDER BY ts DESC LIMIT 1',[id]); if (r.rows.length){ const p=r.rows[0]; const t=p.ts.toISOString(); if (t!==lastTs){ lastTs=t; const payload=JSON.stringify({lat:p.lat,lng:p.lng,ts:t}); res.write(`data: ${payload}\n\n`); } } }catch(e){console.error(e);} },3000); req.on('close',()=>{ clearInterval(interval); clearInterval(timer); }); });
+export default router;

@@ -1,0 +1,10 @@
+import express from 'express';
+import { query } from '../db.js';
+const router = express.Router();
+router.get('/pending', async (req,res)=>{ const companies=(await query("SELECT * FROM companies WHERE status='PENDING'")).rows; const operators=(await query("SELECT * FROM operators WHERE status='PENDING'")).rows; const vehicles=(await query("SELECT * FROM vehicles WHERE status='PENDING'")).rows; res.json({ companies, operators, vehicles }); });
+router.post('/approve', async (req,res)=>{ const { type,id }=req.body; const table=(type==='company')?'companies':(type==='operator'?'operators':'vehicles'); await query(`UPDATE ${table} SET status='APPROVED' WHERE id=$1`,[id]); res.json({ ok:true }); });
+router.get('/commission', async (req,res)=>{ const r=await query("SELECT value FROM app_settings WHERE key='commission_pct' LIMIT 1"); res.json({ commission: r.rows[0] ? parseFloat(r.rows[0].value) : 5 }); });
+router.post('/commission', async (req,res)=>{ const { commission } = req.body; await query("INSERT INTO app_settings(key,value) VALUES('commission_pct',$1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value",[commission]); res.json({ ok:true }); });
+router.get('/payouts', async (req,res)=>{ const r=(await query('SELECT * FROM payouts ORDER BY created_at DESC')).rows; res.json(r); });
+router.post('/payouts/:id/release', async (req,res)=>{ const id=req.params.id; await query("UPDATE payouts SET status='RELEASED', released_at=now() WHERE id=$1",[id]); res.json({ ok:true }); });
+export default router;
