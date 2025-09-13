@@ -1,0 +1,44 @@
+@@ .. @@
+ version: '3.8'
+ services:
+   db:
+     image: postgres:14
+     environment:
+       POSTGRES_USER: trackas
+       POSTGRES_PASSWORD: trackas
+       POSTGRES_DB: trackas
+     ports: ["5432:5432"]
+     volumes:
+       - db_data:/var/lib/postgresql/data
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U trackas"]
++      interval: 30s
++      timeout: 10s
++      retries: 3
++      
+   backend:
+     build: ./backend
+     ports: ["4000:4000"]
+     depends_on: ["db"]
++    environment:
++      - DATABASE_URL=postgres://trackas:trackas@db:5432/trackas
++      - NODE_ENV=development
++    volumes:
++      - ./backend:/app
++      - /app/node_modules
++    command: npm run dev
++    
+   frontend:
+     build: ./frontend
+     ports: ["3000:3000"]
+     depends_on: ["backend"]
++    environment:
++      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
++    volumes:
++      - ./frontend:/app
++      - /app/node_modules
++      - /app/.next
++    command: npm run dev
++    
+ volumes:
+   db_data:

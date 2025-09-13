@@ -1,0 +1,25 @@
+{
+  "name": "trackas-platform",
+  "version": "1.0.0",
+  "description": "Complete Logistics Management Platform MVP",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:install": "cd backend && npm install",
+    "frontend:install": "cd frontend && npm install",
+    "install:all": "npm run backend:install && npm run frontend:install",
+    "backend:migrate": "cd backend && npm run migrate",
+    "backend:seed": "cd backend && npm run seed",
+    "setup": "npm run install:all && npm run backend:migrate && npm run backend:seed",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
+    "backend:start": "cd backend && npm start",
+    "frontend:start": "cd frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["logistics", "tracking", "shipment", "mvp"],
+  "author": "TrackAS Team",
+  "license": "MIT"
+}
