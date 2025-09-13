@@ -1,1 +1,11 @@
-{"code":"rate-limited","message":"You have hit the rate limit. Please upgrade to keep chatting.","providerLimitHit":false,"isRetryable":true}
+import '../styles/globals.css'
+import ChatWidget from '../components/ChatWidget'
+
+export default function App({ Component, pageProps }) {
+  return (
+    <>
+      <Component {...pageProps} />
+      <ChatWidget />
+    </>
+  )
+}
